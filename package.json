@@ -1,0 +1,22 @@
+{
+  "name": "food_explorer_back",
+  "version": "1.0.0",
+  "description": "API do projeto FoodExplorer",
+  "main": "index.js",
+  "scripts": {
+    "dev": "nodemon ./src/server.js"
+  },
+  "keywords": [],
+  "author": "Matheus Augusto",
+  "license": "ISC",
+  "dependencies": {
+    "bcryptjs": "^2.4.3",
+    "express": "^4.19.2",
+    "express-async-errors": "^3.1.1",
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.4"
+  }
+}
