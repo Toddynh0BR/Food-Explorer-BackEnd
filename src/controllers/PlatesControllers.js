@@ -1,28 +1,41 @@
+const DiskStorage = require("../providers/DiskStorage");
 const AppError = require("../utils/AppError");
 const knex = require("../database/knex");
 
 class PlatesController {
   async create(request, response) {
-    const { img, name, price, description, category, ingredients } = request.body;
+    const { name, price, description, category, ingredients } = request.body;
+  
+    if (!request.file || !request.file.filename) {
+      throw new AppError("Arquivo de imagem não fornecido.");
+    }
 
+    //plate
     const [plate_id] = await knex('plates').insert({
-      img,
       name,
       price,
       description,
       category
     });
-
-    const ingredientsInsert = ingredients.map(ingredient => {
-      return({
-        plate_id,
-        name: ingredient
-      })
-    }); 
-
-    await knex("ingredients").insert(ingredientsInsert);
+  
+    //image
+    const imgFilename = request.file.filename;
+    const diskStorage = new DiskStorage(); 
+  
+    const filename = await diskStorage.saveFile(imgFilename);
     
+    await knex("plates").where({ id: plate_id }).update({ img: filename });
+  
+    //ingredients
+    const ingredientsInsert = ingredients.map(ingredient => ({
+      plate_id,
+      name: ingredient
+    }));
+  
+    await knex("ingredients").insert(ingredientsInsert);
+  
     return response.status(201).json();
+
   };
 
   async update(request, response) {
