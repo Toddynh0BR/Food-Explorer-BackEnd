@@ -27,29 +27,51 @@ class PlatesController {
     await knex("plates").where({ id: plate_id }).update({ img: filename });
   
     //ingredients
-    const ingredientsInsert = ingredients.map(ingredient => ({
+    let ingredientsArray;
+    try {
+      ingredientsArray = JSON.parse(ingredients);
+      if (!Array.isArray(ingredientsArray)) {
+        throw new Error("epa nene");
+      }
+    } catch (error) {
+      throw new AppError("opa");
+    }
+
+    const ingredientsInsert = ingredientsArray.map(ingredient => ({
       plate_id,
       name: ingredient
     }));
-  
-    await knex("ingredients").insert(ingredientsInsert);
-  
-    return response.status(201).json();
 
+    await knex("ingredients").insert(ingredientsInsert);
+
+    return response.status(201).json();
   };
 
   async update(request, response) {
-    const { img, name, price, description, category } = request.body;
+    const {  name, price, description, category, ingredients } = request.body;
     const { id } = request.params;
 
     const plate = await knex('plates').where({ id }).first();
 
     if (!plate) {
       throw new AppError("Prato não existe.");
-    }
+    };
 
+      //image// 
+  let filename;
+  if (request.file) {
+    const diskStorage = new DiskStorage();
+    const imgFilename = request.file.filename;
+    filename = await diskStorage.saveFile(imgFilename);
+
+    if (plate.img) {
+      await diskStorage.deleteFile(plate.img);
+    }
+  };
+
+      //plate, image// 
     const updatedPlate = {
-      img: img ?? plate.img,
+      img: filename ?? plate.img,
       name: name ?? plate.name,
       price: price ?? plate.price,
       description: description ?? plate.description,
@@ -61,7 +83,27 @@ class PlatesController {
       .where({ id })
       .update(updatedPlate);
 
-    return response.json();
+      //ingredients//
+    if (ingredients) {
+    let ingredientsArray;
+    try {
+      ingredientsArray = JSON.parse(ingredients);
+      if (!Array.isArray(ingredientsArray)) {
+        throw new AppError("Ingredientes devem ser um array.");
+      }
+    } catch (error) {
+      throw new AppError("Formato de ingredientes inválido.");
+    }
+
+    const ingredientsInsert = ingredientsArray.map(ingredient => ({
+      plate_id: id,
+      name: ingredient
+    }));
+
+    await knex('ingredients').insert(ingredientsInsert);
+  };
+
+  return response.status(200).json({ message: "Prato atualizado com sucesso." });
   };
 
   async show(request, response) {
