@@ -9,8 +9,8 @@ class PlatesController {
     if (!request.file || !request.file.filename) {
       throw new AppError("Arquivo de imagem não fornecido.");
     }
-
-    //plate
+  
+    // Inserir o prato
     const [plate_id] = await knex('plates').insert({
       name,
       price,
@@ -18,32 +18,35 @@ class PlatesController {
       category
     });
   
-    //image
+    // Salvar a imagem
     const imgFilename = request.file.filename;
     const diskStorage = new DiskStorage(); 
-  
     const filename = await diskStorage.saveFile(imgFilename);
-    
     await knex("plates").where({ id: plate_id }).update({ img: filename });
   
-    //ingredients
-    let ingredientsArray;
-    try {
-      ingredientsArray = JSON.parse(ingredients);
-      if (!Array.isArray(ingredientsArray)) {
-        throw new Error("epa nene");
+    // Inserir os ingredientes
+    if (request.body.ingredients) {
+      console.log("Request body ingredients:", request.body.ingredients);
+      let ingredientsArray;
+      try {
+        ingredientsArray = JSON.parse(request.body.ingredients);
+        console.log("Parsed ingredients array:", ingredientsArray);
+        if (!Array.isArray(ingredientsArray)) {
+          throw new AppError("Ingredientes devem ser um array.");
+        }
+      } catch (error) {
+        console.error("Error parsing ingredients:", error);
+        throw new AppError("Formato de ingredientes inválido.");
       }
-    } catch (error) {
-      throw new AppError("opa");
+  
+      const ingredientsInsert = ingredientsArray.map(ingredient => ({
+        plate_id: plate_id,
+        name: ingredient
+      }));
+  
+      await knex('ingredients').insert(ingredientsInsert);
     }
-
-    const ingredientsInsert = ingredientsArray.map(ingredient => ({
-      plate_id,
-      name: ingredient
-    }));
-
-    await knex("ingredients").insert(ingredientsInsert);
-
+  
     return response.status(201).json();
   };
 
@@ -125,6 +128,12 @@ class PlatesController {
   async delete(request, response) {
     const { id } = request.params;
 
+
+    const diskStorage = new DiskStorage();
+    const plate = await knex('plates').where({ id }).first();
+
+    await diskStorage.deleteFile(plate.img);
+
     await knex("plates").where({id}).delete();
 
     return response.json()
@@ -159,8 +168,12 @@ class PlatesController {
             .orderBy("name");
     }
 
+    if(plates == ""){
+      return response.json("nenhum prato encontrado")
+    }
+
     return response.json(plates);
-}
+  };
 }
 
 module.exports = PlatesController;
