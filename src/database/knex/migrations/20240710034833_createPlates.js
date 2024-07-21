@@ -2,7 +2,7 @@ exports.up = knex => knex.schema.createTable("plates", table => {
     table.increments('id').primary();
     table.string('img');
     table.string('name');
-    table.string('price');
+    table.decimal('price', 10, 2);
     table.text('description');
     table.string('category');
     

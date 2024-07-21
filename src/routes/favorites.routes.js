@@ -7,8 +7,9 @@ const FavoritesController = require("../controllers/FavoritesController");
 
 const favoritesController = new FavoritesController();
 
-favoritesRoutes.post("/:plate_id", enssureAuthenticated, favoritesController.create);
+favoritesRoutes.get("/isfavorite", enssureAuthenticated, favoritesController.isFavorite);
 favoritesRoutes.delete("/:id", enssureAuthenticated, favoritesController.delete);
-favoritesRoutes.get("/", enssureAuthenticated, favoritesController.show);
+favoritesRoutes.post("/show", enssureAuthenticated, favoritesController.show);
+favoritesRoutes.post("/", enssureAuthenticated, favoritesController.create);
 
 module.exports = favoritesRoutes;

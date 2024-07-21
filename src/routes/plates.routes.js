@@ -9,10 +9,10 @@ const PlatesController = require("../controllers/PlatesControllers");
 const platesController = new PlatesController();
 const upload = multer(uploadConfig.MULTER);
 
-platesRoutes.get("/", platesController.index);
 platesRoutes.post("/", upload.single('file'), platesController.create);
+platesRoutes.delete("/:id", platesController.delete);
 platesRoutes.put("/:id",  platesController.update);
 platesRoutes.get("/:id", platesController.show);
-platesRoutes.delete("/:id", platesController.delete);
+platesRoutes.get("/", platesController.index);
 
 module.exports = platesRoutes;

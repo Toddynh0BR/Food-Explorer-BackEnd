@@ -1,11 +1,10 @@
 const AppError = require("../utils/AppError");
 const knex = require("../database/knex");
-const { request, response } = require("express");
 
 class FavoritesController {
     async create(request, response) {
         const user_id = request.user.id;
-        const { plate_id } = request.params;
+        const { plate_id } = request.body;
 
         const plateExists = await knex('plates').where({ id: plate_id }).first();
 
@@ -23,26 +22,49 @@ class FavoritesController {
 
     async show(request, response) {
         const user_id = request.user.id;
-    
+
         const favorites = await knex("favorites").where({ user_id });
     
         const favoritePlateIds = favorites.map(favorite => favorite.plate_id);
     
         const plates = await knex("plates").whereIn("id", favoritePlateIds);
+
+        const separatePlates = await Promise.all(plates.map(async plate => {
+            return {
+                id: plate.id,
+                img: plate.img,
+                name: plate.name
+            }
+        })); 
+
+        return response.json({ separatePlates });
+    };
+
+    async isFavorite(request, response) {
+        const { plate_id } = request.body;
+        const user_id = request.user.id;
     
-        return response.json({ plates });
+        try {
+            const favorite = await knex("favorites").where({ plate_id, user_id }).first();
+            
+            const Exist = !!favorite;
+    
+            return response.json({ Exist });
+        } catch (error) {
+             throw new AppError("Erro ao verificar banco de dados.");
+        }
     };
 
     async delete(request, response) {
         const { id } = request.params;
 
-        const favorite = await knex("favorites").where({ id }).first();
+        const favorite = await knex("favorites").where({ plate_id: id }).first();
 
         if (!favorite) {
             throw new AppError("Favorito não encontrado.", 404);
         };
 
-        await knex("favorites").where({ id }).delete();
+        await knex("favorites").where({ plate_id: id }).delete();
 
         return response.status(204).json();
     };
