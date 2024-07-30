@@ -6,6 +6,7 @@ class ItemController {
     async addOrder(request, response) {
         const user_id = request.user.id;
         const { plate_id, quantity } = request.body;
+        console.log(quantity)
     
             await knex.transaction(async trx => {
                 const plate = await trx("plates").where({ id: plate_id }).first();
@@ -15,11 +16,9 @@ class ItemController {
                     throw new AppError("Prato não encontrado");
                 }
                 if (!order) {
-                    throw new AppError("Pedido não encontrado");
+                    throw new AppError("Impossível adicionar item após pagamento.");
                 }
-    
-
-                const platePrice = parseFloat(plate.price.replace(',', '.'));
+                const platePrice = plate.price;
     
                 const orderTotal = typeof order.total === 'string' ? parseFloat(order.total.replace(',', '.')) : order.total;
     
@@ -29,6 +28,7 @@ class ItemController {
                     user_id,
                     orders_id: order.id,
                     plate_id,
+                    plate_img: plate.img,
                     plate_name: plate.name,
                     plate_price: plate.price,
                     quantity: quantity
@@ -37,9 +37,9 @@ class ItemController {
                 await trx("order_item").insert(order_item);
     
 
-                const totalFormatted = total.toFixed(2).replace('.', ',');
+               
                 await trx("orders")
-                    .update({ total: totalFormatted })
+                    .update({ total })
                     .where({ user_id, status: "criando" });
     
                 return response.json({ message: "Pedido atualizado com sucesso" });
@@ -68,13 +68,13 @@ class ItemController {
                 const orderTotal = typeof order.total === 'string' ? parseFloat(order.total.replace(',', '.')) : order.total;
     
 
-                const platePrice = parseFloat(order_item.plate_price.replace(',', '.'));
+                const platePrice = order_item.plate_price;
     
 
                 const total = orderTotal - (platePrice * Number(order_item.quantity));
     
 
-                const totalFormatted = total.toFixed(2).replace('.', ',');
+                const totalFormatted = total;
     
                 await trx("orders")
                     .update({ total: totalFormatted })

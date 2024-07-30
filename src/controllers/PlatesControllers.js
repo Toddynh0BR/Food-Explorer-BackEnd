@@ -9,33 +9,30 @@ class PlatesController {
     if (!request.file || !request.file.filename) {
       throw new AppError("Arquivo de imagem não fornecido.");
     }
-  
-    // Inserir o prato
+
     const [plate_id] = await knex('plates').insert({
       name,
       price,
       description,
       category
     });
-  
-    // Salvar a imagem
+
     const imgFilename = request.file.filename;
     const diskStorage = new DiskStorage(); 
     const filename = await diskStorage.saveFile(imgFilename);
     await knex("plates").where({ id: plate_id }).update({ img: filename });
   
-    // Inserir os ingredientes
-    if (request.body.ingredients) {
-      console.log("Request body ingredients:", request.body.ingredients);
+
+    if (ingredients) {
       let ingredientsArray;
+
       try {
-        ingredientsArray = JSON.parse(request.body.ingredients);
-        console.log("Parsed ingredients array:", ingredientsArray);
+        ingredientsArray = JSON.parse(ingredients);
         if (!Array.isArray(ingredientsArray)) {
           throw new AppError("Ingredientes devem ser um array.");
         }
       } catch (error) {
-        console.error("Error parsing ingredients:", error);
+        console.error(error);
         throw new AppError("Formato de ingredientes inválido.");
       }
   
@@ -53,6 +50,7 @@ class PlatesController {
   async update(request, response) {
     const {  name, price, description, category, ingredients } = request.body;
     const { id } = request.params;
+    console.log(id ,name, price, description, category, ingredients, request.file )
 
     const plate = await knex('plates').where({ id }).first();
 
@@ -87,7 +85,7 @@ class PlatesController {
       .update(updatedPlate);
 
       //ingredients//
-    if (ingredients) {
+    if (ingredients && ingredients.length > 0) {
     let ingredientsArray;
     try {
       ingredientsArray = JSON.parse(ingredients);
@@ -110,7 +108,9 @@ class PlatesController {
   };
 
   async show(request, response) {
-    const { id } = request.params;
+    const { id } = request.body;
+
+    if(id){
 
     const plate = await knex("plates").where({id}).first();
     const ingredients = await knex("ingredients").where({plate_id: id}).orderBy("name");
@@ -123,57 +123,90 @@ class PlatesController {
       ...plate,
       ingredients
     })
+  }
+
+  const plates = await knex("plates")
+  return response.json({plates});
   };
 
   async delete(request, response) {
-    const { id } = request.params;
+    const { plate_id, ingredient_id } = request.body;
 
 
+    if(plate_id){
     const diskStorage = new DiskStorage();
-    const plate = await knex('plates').where({ id }).first();
+    const plate = await knex('plates').where({ id: plate_id }).first();
 
     await diskStorage.deleteFile(plate.img);
 
-    await knex("plates").where({id}).delete();
+    await knex("plates").where({id: plate_id}).delete();
+    }
+
+    if(ingredient_id) {
+      await knex("ingredients")
+               .where({ id: ingredient_id })
+               .delete()
+    }
 
     return response.json()
   };
 
   async index(request, response) {
-    const { name, ingredients } = request.query;
+    const { index } = request.body;
 
-    let plates;
 
-    if (ingredients) {
-        const FilterIngredients = ingredients.split(',').map(ingredient => ingredient.trim());
-
-        plates = await knex("ingredients")
-            .select([
-                "plates.name",
-                "plates.price",
-                "plates.description",
-                "plates.category"
-            ])
-            .innerJoin("plates", "plates.id", "ingredients.plate_id")
-            .where(function() {
-                if (name) {
-                    this.whereLike("plates.name", `%${name}%`);
-                }
-            })
-            .whereIn("ingredients.name", FilterIngredients)
-            .groupBy("plates.id");
-    } else {
-        plates = await knex("plates")
-            .whereLike("name", `%${name}%`)
-            .orderBy("name");
+    if (!index || index.trim() === ""){
+      throw new AppError("Digite a algo para poder buscar por pratos ou ingredientes.");
     }
+  
+    const plates = await knex("plates")
+                        .where("name", "like", `%${index}%`);
+  
 
-    if(plates == ""){
-      return response.json("nenhum prato encontrado")
+    const ingredients = await knex("ingredients")
+                             .where("name", "like", `%${index}%`);
+  
+
+    if (!plates.length && !ingredients.length) {
+      throw new AppError(`Nenhum resultado encontrado para: ${index}.`);
     }
+  
+    const plateIds = new Set();
+    let result = [];
+  
+    if (plates.length) {
+      plates.forEach(plate => plateIds.add(plate.id));
+      result = [...plates];
+    }
+  
+    if (ingredients.length) {
+      const FilterIngredients = ingredients.map(ingredient => ingredient.name);
 
-    return response.json(plates);
+      const platesFind = await knex("plates")
+          .select([
+              "plates.id",
+              "plates.img",
+              "plates.name",
+              "plates.price",
+              "plates.description",
+              "plates.category"
+          ])
+          .innerJoin("ingredients", "plates.id", "ingredients.plate_id")
+          .whereIn("ingredients.name", FilterIngredients)
+          .groupBy("plates.id");
+
+          
+      platesFind.forEach(plate => {
+          if (!plateIds.has(plate.id)) {
+              plateIds.add(plate.id);
+              result.push(plate);
+          }
+      });
+  }
+  
+    return response.json(result);
   };
+  
 }
 
 module.exports = PlatesController;

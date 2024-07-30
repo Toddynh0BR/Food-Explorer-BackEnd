@@ -23,7 +23,7 @@ class OrdersController {
 
     async Update(request, response) {
       const { orders_id, status } = request.body;
-      console.log(orders_id, status)
+     
       const order = await knex("orders")
                          .where({ id: orders_id })
                          .first();

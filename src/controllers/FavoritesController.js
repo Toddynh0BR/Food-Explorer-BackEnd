@@ -3,8 +3,8 @@ const knex = require("../database/knex");
 
 class FavoritesController {
     async create(request, response) {
-        const user_id = request.user.id;
         const { plate_id } = request.body;
+        const user_id = request.user.id;
 
         const plateExists = await knex('plates').where({ id: plate_id }).first();
 
