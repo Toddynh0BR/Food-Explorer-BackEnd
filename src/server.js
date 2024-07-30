@@ -8,7 +8,7 @@ const routes = require("./routes");
 const cors = require("cors");
 
 const app = express();
-const PORT = process.env.SERVER_PORT || 3000;
+const port = process.env.PORT || 4000;
 
 app.use("/file", express.static(uploadConfigs.UPLOADS_FOLDER));
 app.use(express.json());
@@ -31,4 +31,4 @@ app.use((error, request, response, next) => {
   });
 });
 
-app.listen(PORT, () => console.log(`Server is running on port ${PORT}`));
+app.listen(port, () => console.log(`Server is running on port ${port}`));
