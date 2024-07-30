@@ -47,8 +47,6 @@ class ItemController {
   
     }
     
-    
-    
     async removeOrder(request, response) {
         const { order_id, order_item_id } = request.body;
     

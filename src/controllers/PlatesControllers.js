@@ -156,7 +156,7 @@ class PlatesController {
 
 
     if (!index || index.trim() === ""){
-      throw new AppError("Digite a algo para poder buscar por pratos ou ingredientes.");
+      throw new AppError("Digite algo para poder buscar por pratos ou ingredientes.");
     }
   
     const plates = await knex("plates")
