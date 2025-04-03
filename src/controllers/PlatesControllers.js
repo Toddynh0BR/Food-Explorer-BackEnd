@@ -50,7 +50,6 @@ class PlatesController {
   async update(request, response) {
     const {  name, price, description, category, ingredients } = request.body;
     const { id } = request.params;
-    console.log(id ,name, price, description, category, ingredients, request.file )
 
     const plate = await knex('plates').where({ id }).first();
 
@@ -72,11 +71,12 @@ class PlatesController {
 
       //plate, image// 
     const updatedPlate = {
-      img: filename ?? plate.img,
       name: name ?? plate.name,
+      img: filename ?? plate.img,
       price: price ?? plate.price,
-      description: description ?? plate.description,
       category: category ?? plate.category,
+      description: description ?? plate.description,
+      
       updated_at: knex.fn.now() 
     };
 

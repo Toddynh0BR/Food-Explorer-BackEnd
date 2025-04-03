@@ -15,6 +15,10 @@ app.use(express.json());
 app.use(cors());
 app.use(routes);
 
+app.head('/health', (req, res) => {
+  res.status(200).end();
+});
+
 app.use((error, request, response, next) => {
   if (error instanceof AppError) {
     return response.status(error.statusCode).json({
