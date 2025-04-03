@@ -8,9 +8,7 @@ class UsersController {
 
     const checkUserExists = await knex('users').where({ email }).first();
 
-    if (checkUserExists) {
-      throw new AppError("este email já está em uso");
-    }
+    if (checkUserExists) throw new AppError("este email já está em uso");
 
     const hashedPassword = await hash(password, 8);
 
